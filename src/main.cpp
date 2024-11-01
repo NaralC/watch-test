@@ -27,27 +27,47 @@ void displayColor(uint8_t red, uint8_t green, uint8_t blue)
   pixels.show(); // Update the LEDs to show the color
 }
 
-// 1. Alternate Blue and Green Effect (entire ring alternates color)
-void alternateBlueGreen()
+void pureBlue()
 {
-  displayColor(0, 255, 0); // Green
-  delay(500);
-  displayColor(0, 0, 255); // Blue
-  delay(500);
+  displayColor(74, 229, 254);
 }
 
-// 3. Grey with Random Colors Effect
-void greyWithRandomColors()
+void alternateRedBlue()
 {
   for (int i = 0; i < NUMPIXELS; i++)
   {
-    displayColor(random(255), random(255), random(255));
+    if (i % 2 == 0)
+    {                                                       // Every even LED will be red
+      pixels.setPixelColor(i, pixels.Color(253, 151, 103)); // Red color
+    }
+    else
+    {                                                      // Every odd LED will be blue
+      pixels.setPixelColor(i, pixels.Color(74, 229, 254)); // Blue color
+    }
   }
-  pixels.show();
+  pixels.show(); // Update the LEDs to show the colors
 }
 
-// 4. Grey with Lighting Effect (Pulsing Effect)
-void greyLightingEffect()
+void greyWithRed()
+{
+  int redCount = 0; // Counter to track the number of red LEDs
+
+  for (int i = 0; i < NUMPIXELS; i++)
+  {
+    if (redCount < 4 && i % (NUMPIXELS / 4) == 0)
+    {                                                       // Space out 4 red LEDs evenly
+      pixels.setPixelColor(i, pixels.Color(253, 151, 103)); // Red color
+      redCount++;
+    }
+    else
+    {
+      pixels.setPixelColor(i, pixels.Color(70, 70, 70)); // Grey color
+    }
+  }
+  pixels.show(); // Update the LEDs to show the colors
+}
+
+void pulsingGrey()
 {
   for (int brightness = 50; brightness <= 255; brightness += 5)
   {
@@ -72,20 +92,16 @@ void setup()
 
 void loop()
 {
-  // 1. Alternate between blue and green
-  alternateBlueGreen();
+  pureBlue();
   delay(1000);
 
-  // 2. Solid orange
-  displayColor(255, 145, 0); // Orange color
+  alternateRedBlue();
   delay(1000);
 
-  // 3. Grey with random colors
-  greyWithRandomColors();
+  greyWithRed();
   delay(1000);
 
-  // 4. Grey with lighting effect
-  greyLightingEffect();
+  pulsingGrey();
   delay(1000);
 }
 
@@ -156,15 +172,18 @@ void loop()
 //           // Set color based on sdnn value
 //           if (sdnn < 20)
 //           {
-//             displayColor(255, 160, 60); // Warm, bright color for low stress
+//             pulsingGrey();
 //           }
-//           else if (sdnn >= 50 && sdnn <= 140)
+//           else if (sdnn >= 20 && sdnn <= 40)
 //           {
-//             displayColor(0, 0, 139); // Dark blue for moderate stress
+//             greyWithRed();
+//           }
+//           else if (sdnn >= 20 && sdnn <= 40) {
+//             displayColor(255, 145, 0); // Orange color
 //           }
 //           else
 //           {
-//             displayColor(105, 105, 105); // Dark grey for high stress
+//             alternateRedBlue();
 //           }
 //         }
 //         else
