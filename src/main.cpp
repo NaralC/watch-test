@@ -1,109 +1,202 @@
+#include <Adafruit_NeoPixel.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <Adafruit_NeoPixel.h>
 #include <ArduinoJson.h>
+
+// TODO: have a placeholder color for when data's not ready
+// TODO: colors 40-60 for orange/yellow
 
 // Your Wi-Fi credentials
 const char *ssid = "ඞඞඞඞඞඞඞඞඞ";
 const char *password = "12345678";
 
 // API endpoint
-const char *serverUrl = "http://192.168.82.36:8000/hrv/api/endpoint/";
+const char *serverUrl = "http://192.168.84.36:8000/hrv/api/endpoint/";
 
-// Define the pin connected to the NeoPixel Data In
-#define LED_PIN 12   // Change this to the GPIO pin you’re using (e.g., GPIO 5)
-#define NUMPIXELS 16 // Set this to the number of LEDs on your NeoPixel or NeoFruit ring
+// Define the GPIO pin connected to the DIN of the WS2812B
+#define LED_PIN 4    // Change this to the GPIO pin you are using (e.g., GPIO 5)
+#define NUMPIXELS 15 // Set this to the number of LEDs in your WS2812B strip
 
-// Create the NeoPixel object
-Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRBW + NEO_KHZ800); // Use NEO_GRB for RGB, NEO_GRBW for RGBW
+// // Create the NeoPixel object
+Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800); // Use NEO_GRB for WS2812B
 
-// Helper function to set all pixels to the same color
-void displayColor(uint8_t red, uint8_t green, uint8_t blue)
+// Color Wave Effect
+void colorWaveEffect(uint8_t red, uint8_t green, uint8_t blue, int speed)
 {
   for (int i = 0; i < NUMPIXELS; i++)
   {
-    pixels.setPixelColor(i, pixels.Color(red, green, blue));
-  }
-  pixels.show(); // Update the LEDs to show the color
-}
-
-void pureBlue()
-{
-  displayColor(74, 229, 254);
-}
-
-void alternateRedBlue()
-{
-  for (int i = 0; i < NUMPIXELS; i++)
-  {
-    if (i % 2 == 0)
-    {                                                       // Every even LED will be red
-      pixels.setPixelColor(i, pixels.Color(253, 151, 103)); // Red color
-    }
-    else
-    {                                                      // Every odd LED will be blue
-      pixels.setPixelColor(i, pixels.Color(74, 229, 254)); // Blue color
-    }
-  }
-  pixels.show(); // Update the LEDs to show the colors
-}
-
-void greyWithRed()
-{
-  int redCount = 0; // Counter to track the number of red LEDs
-
-  for (int i = 0; i < NUMPIXELS; i++)
-  {
-    if (redCount < 4 && i % (NUMPIXELS / 4) == 0)
-    {                                                       // Space out 4 red LEDs evenly
-      pixels.setPixelColor(i, pixels.Color(253, 151, 103)); // Red color
-      redCount++;
-    }
-    else
+    pixels.clear();
+    for (int j = 0; j < NUMPIXELS; j++)
     {
-      pixels.setPixelColor(i, pixels.Color(70, 70, 70)); // Grey color
+      int position = (i + j) % NUMPIXELS;
+      uint8_t brightness = map(j, 0, NUMPIXELS, 0, 255); // Gradual fade
+      pixels.setPixelColor(position, pixels.Color(red * brightness / 255, green * brightness / 255, blue * brightness / 255));
     }
+    pixels.show();
+    delay(speed);
   }
-  pixels.show(); // Update the LEDs to show the colors
 }
 
-void pulsingGrey()
+// // Generate colors across a spectrum
+uint32_t colorWheel(byte position)
 {
-  for (int brightness = 50; brightness <= 255; brightness += 5)
+  position = 255 - position;
+  if (position < 85)
   {
-    pixels.setBrightness(brightness);
-    displayColor(70, 70, 70); // Grey color
-    delay(20);
+    return pixels.Color(255 - position * 3, 0, position * 3);
   }
-  for (int brightness = 255; brightness >= 50; brightness -= 5)
+  else if (position < 170)
   {
-    pixels.setBrightness(brightness);
-    displayColor(70, 70, 70); // Grey color
-    delay(20);
+    position -= 85;
+    return pixels.Color(0, position * 3, 255 - position * 3);
+  }
+  else
+  {
+    position -= 170;
+    return pixels.Color(position * 3, 255 - position * 3, 0);
   }
 }
 
-void setup()
+void rainbowEffect(int delayTime)
 {
-  pixels.begin(); // Initialize the NeoPixel library
-  pixels.show();  // Turn off all LEDs initially
-  pixels.setBrightness(30);
+  for (int j = 0; j < 256; j++) // Cycle through the color wheel
+  {
+    for (int i = 0; i < NUMPIXELS; i++)
+    {
+      int wheelPos = (i * 256 / NUMPIXELS + j) & 255;
+      pixels.setPixelColor(i, colorWheel(wheelPos));
+    }
+    pixels.show();
+    delay(delayTime); // Adjust speed of the rainbow effect
+  }
 }
 
-void loop()
-{
-  pureBlue();
-  delay(1000);
+// void mockStressSimulation()
+// {
+//   for (float sdnn = 0; sdnn <= 90; sdnn += 5) // Simulating SDNN from 0 to 100
+//   {
+//     Serial.print("Mock SDNN: ");
+//     Serial.println(sdnn);
 
-  alternateRedBlue();
-  delay(1000);
+//     uint8_t red, green, blue;
 
-  greyWithRed();
-  delay(1000);
+//     // Determine color mapping based on SDNN range
+//     // High stress
+//     if (sdnn <= 0)
+//     {
+//       red = 0;
+//       green = 0;
+//       blue = 0;
+//     }
+//     else if (sdnn <= 20)
+//     {
+//       // Blue
+//       red = 0;
+//       green = 0;
+//       blue = 255;
+//     }
+//     else if (sdnn > 20 && sdnn <= 30)
+//     {
+//       // Purple
+//       red = 128;
+//       green = 0;
+//       blue = 128;
+//     }
+//     else if (sdnn > 30 && sdnn <= 40)
+//     {
+//       // Pink
+//       red = 255;
+//       green = 105;
+//       blue = 180;
+//     }
+//     else if (sdnn > 40 && sdnn <= 50)
+//     {
+//       // Yellow
+//       red = 255;
+//       green = 158;
+//       blue = 0;
+//     }
+//     else if (sdnn > 50 && sdnn <= 70)
+//     {
+//       // Orange
+//       red = 255;
+//       green = 100;
+//       blue = 0;
+//     }
+//     else
+//     {
+//       rainbowEffect(20);
+//     }
+//     // Low stress
 
-  pulsingGrey();
-  delay(1000);
-}
+//     // Call colorWaveEffect with the mapped colors
+//     colorWaveEffect(red, green, blue, 70); // Speed of the wave
+
+//     delay(5); // Delay to visualize the change
+//   }
+
+//   for (float sdnn = 90; sdnn >= 0; sdnn -= 5) // Simulating SDNN back from 100 to 0
+//   {
+//     Serial.print("Mock SDNN: ");
+//     Serial.println(sdnn);
+
+//     uint8_t red, green, blue;
+
+//     // Determine color mapping based on SDNN range
+//     // High stress
+//     if (sdnn <= 0)
+//     {
+//       red = 0;
+//       green = 0;
+//       blue = 0;
+//     }
+//     else if (sdnn <= 20)
+//     {
+//       // Blue
+//       red = 0;
+//       green = 0;
+//       blue = 255;
+//     }
+//     else if (sdnn > 20 && sdnn <= 30)
+//     {
+//       // Purple
+//       red = 128;
+//       green = 0;
+//       blue = 128;
+//     }
+//     else if (sdnn > 30 && sdnn <= 40)
+//     {
+//       // Pink
+//       red = 255;
+//       green = 105;
+//       blue = 140;
+//     }
+//     else if (sdnn > 40 && sdnn <= 50)
+//     {
+//       // Yellow
+//       red = 255;
+//       green = 158;
+//       blue = 0;
+//     }
+//     else if (sdnn > 50 && sdnn <= 70)
+//     {
+//       // Orange
+//       red = 255;
+//       green = 100;
+//       blue = 0;
+//     }
+//     else
+//     {
+//       rainbowEffect(20);
+//     }
+//     // Low stress
+
+//     // Call colorWaveEffect with the mapped colors
+//     colorWaveEffect(red, green, blue, 70); // Speed of the wave
+
+//     delay(5); // Delay to visualize the change
+//   }
+// }
 
 // void setup()
 // {
@@ -111,103 +204,149 @@ void loop()
 
 //   // Initialize NeoPixel
 //   pixels.begin();
-//   pixels.show(); // Turn off all LEDs initially
-//   pixels.setBrightness(50);
-
-//   // Connect to Wi-Fi
-//   WiFi.begin(ssid, password);
-//   Serial.print("Connecting to Wi-Fi");
-//   while (WiFi.status() != WL_CONNECTED)
-//   {
-//     delay(1000);
-//     Serial.print(".");
-//   }
-//   Serial.println("\nConnected to Wi-Fi");
+//   pixels.show();             // Turn off all LEDs initially
+//   pixels.setBrightness(100); // Set brightness for vibrant colors
 // }
 
 // void loop()
 // {
-//   if (WiFi.status() == WL_CONNECTED)
-//   {
-//     HTTPClient http;
-//     http.begin(serverUrl);
-//     int httpResponseCode = http.GET();
-
-//     if (httpResponseCode > 0)
-//     {
-//       String response = http.getString();
-//       // Serial.println("HTTP Response code: " + String(httpResponseCode));
-//       // Serial.println("Raw Response:");
-//       // Serial.println(response);
-
-//       // Clean up response by removing outer quotes and escape characters
-//       if (response.startsWith("\"") && response.endsWith("\""))
-//       {
-//         response = response.substring(1, response.length() - 1); // Remove outer quotes
-//       }
-//       response.replace("\\n", "");    // Remove newlines
-//       response.replace("\\\"", "\""); // Replace escaped quotes with normal quotes
-//       response.trim();                // Remove any extra spaces
-
-//       // Serial.println("Cleaned Response:");
-//       // Serial.println(response); // Print cleaned response to confirm
-
-//       // Parse the cleaned JSON response
-//       StaticJsonDocument<1024> doc;
-//       DeserializationError error = deserializeJson(doc, response);
-
-//       if (!error)
-//       {
-//         // Debug print the full parsed JSON structure
-//         // Serial.println("Parsed JSON:");
-//         // serializeJsonPretty(doc, Serial);
-//         // Serial.println();
-
-//         // Check if 'sdnn' key exists and retrieve its value
-//         if (doc.containsKey("sdnn"))
-//         {
-//           float sdnn = doc["sdnn"];
-//           Serial.println("sdnn: " + String(sdnn));
-
-//           // Set color based on sdnn value
-//           if (sdnn < 20)
-//           {
-//             pulsingGrey();
-//           }
-//           else if (sdnn >= 20 && sdnn <= 40)
-//           {
-//             greyWithRed();
-//           }
-//           else if (sdnn >= 20 && sdnn <= 40) {
-//             displayColor(255, 145, 0); // Orange color
-//           }
-//           else
-//           {
-//             alternateRedBlue();
-//           }
-//         }
-//         else
-//         {
-//           Serial.println("Error: 'sdnn' key not found in JSON response.");
-//         }
-//       }
-//       else
-//       {
-//         Serial.println("Error parsing JSON: " + String(error.c_str()));
-//       }
-//     }
-//     else
-//     {
-//       Serial.println("Error on HTTP request, code: " + String(httpResponseCode));
-//     }
-
-//     http.end();
-//   }
-//   else
-//   {
-//     Serial.println("Wi-Fi disconnected, retrying...");
-//     WiFi.reconnect();
-//   }
-
-//   delay(5000);
+//   // Run the mock stress simulation
+//   mockStressSimulation();
 // }
+
+void setup()
+{
+  Serial.begin(9600);
+
+  // Initialize NeoPixel
+  pixels.begin();
+  pixels.show(); // Turn off all LEDs initially
+  // pixels.setBrightness(50);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(1000);
+    Serial.print(".");
+  }
+  Serial.println("\nConnected to Wi-Fi");
+}
+
+void loop()
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    HTTPClient http;
+    http.begin(serverUrl);
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0)
+    {
+      String response = http.getString();
+
+      // Clean up response by removing outer quotes and escape characters
+      if (response.startsWith("\"") && response.endsWith("\""))
+      {
+        response = response.substring(1, response.length() - 1); // Remove outer quotes
+      }
+      response.replace("\\n", "");    // Remove newlines
+      response.replace("\\\"", "\""); // Replace escaped quotes with normal quotes
+      response.trim();                // Remove any extra spaces
+
+      // Parse the cleaned JSON response
+      StaticJsonDocument<1024> doc;
+      DeserializationError error = deserializeJson(doc, response);
+
+      if (!error)
+      {
+        // Check if 'sdnn' key exists and retrieve its value
+        if (doc.containsKey("sdnn"))
+        {
+          float sdnn = doc["sdnn"];
+          Serial.println("sdnn: " + String(sdnn));
+
+          if (sdnn > 70)
+          {
+            // Rainbow effect for low stress
+            rainbowEffect(20);
+          }
+          else
+          {
+            // Map SDNN to colors based on the specified ranges
+            uint8_t red = 0, green = 0, blue = 0;
+
+            if (sdnn <= 0) {
+              // No signal or high stress
+              red = 0;
+              green = 0;
+              blue = 0;
+            }
+            else if (sdnn <= 20)
+            {
+              // Blue
+              red = 0;
+              green = 0;
+              blue = 255;
+            }
+            else if (sdnn > 20 && sdnn <= 30)
+            {
+              // Purple
+              red = 128;
+              green = 0;
+              blue = 128;
+            }
+            else if (sdnn > 30 && sdnn <= 40)
+            {
+              // Pink
+              red = 255;
+              green = 105;
+              blue = 140;
+            }
+            else if (sdnn > 40 && sdnn <= 50)
+            {
+              // Yellow
+              red = 255;
+              green = 158;
+              blue = 0;
+            }
+            else if (sdnn > 50 && sdnn <= 70)
+            {
+              // Orange
+              red = 255;
+              green = 100;
+              blue = 0;
+            }
+
+            // Call colorWaveEffect with the mapped colors
+            colorWaveEffect(red, green, blue, 50); // Speed of the wave
+          }
+        }
+        else
+        {
+          Serial.println("Error: 'sdnn' key not found in JSON response.");
+        }
+      }
+      else
+      {
+        Serial.println("Error parsing JSON: " + String(error.c_str()));
+      }
+    }
+    else
+    {
+      Serial.println("Error on HTTP request, code: " + String(httpResponseCode));
+    }
+
+    http.end();
+  }
+  else
+  {
+    Serial.println("Wi-Fi disconnected, retrying...");
+    WiFi.reconnect();
+  }
+
+  delay(500); // Wait 0.5 seconds before the next request
+}
+
+// TODO: have a placeholder liht when switching the watch
