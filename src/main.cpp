@@ -3,15 +3,12 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
-// TODO: have a placeholder color for when data's not ready
-// TODO: colors 40-60 for orange/yellow
-
 // Your Wi-Fi credentials
 const char *ssid = "ඞඞඞඞඞඞඞඞඞ";
 const char *password = "12345678";
 
 // API endpoint
-const char *serverUrl = "http://192.168.84.36:8000/hrv/api/endpoint/";
+const char *serverUrl = "http://192.168.242.36:8000/hrv/api/endpoint/";
 
 // Define the GPIO pin connected to the DIN of the WS2812B
 #define LED_PIN 4    // Change this to the GPIO pin you are using (e.g., GPIO 5)
@@ -37,182 +34,45 @@ void colorWaveEffect(uint8_t red, uint8_t green, uint8_t blue, int speed)
   }
 }
 
-// // Generate colors across a spectrum
-uint32_t colorWheel(byte position)
+// Function to convert hex color string to RGB values
+void hexToRGB(const char *hex, uint8_t &red, uint8_t &green, uint8_t &blue)
 {
-  position = 255 - position;
-  if (position < 85)
+  if (hex[0] == '#')
+    hex++; // Skip the '#' if present
+
+  unsigned int hexValue;
+  if (sscanf(hex, "%06x", &hexValue) == 1)
   {
-    return pixels.Color(255 - position * 3, 0, position * 3);
-  }
-  else if (position < 170)
-  {
-    position -= 85;
-    return pixels.Color(0, position * 3, 255 - position * 3);
+    red = (hexValue >> 16) & 0xFF;
+    green = (hexValue >> 8) & 0xFF;
+    blue = hexValue & 0xFF;
   }
   else
   {
-    position -= 170;
-    return pixels.Color(position * 3, 255 - position * 3, 0);
+    red = green = blue = 0; // Default to black if parsing fails
   }
 }
 
+// Function to generate a rainbow effect
 void rainbowEffect(int delayTime)
 {
-  for (int j = 0; j < 256; j++) // Cycle through the color wheel
-  {
+  for (int j = 0; j < 256; j++)
+  { // Cycle through the color wheel
     for (int i = 0; i < NUMPIXELS; i++)
     {
       int wheelPos = (i * 256 / NUMPIXELS + j) & 255;
-      pixels.setPixelColor(i, colorWheel(wheelPos));
+      pixels.setPixelColor(i, pixels.Color(
+                                  (wheelPos < 85) ? (wheelPos * 3) : (wheelPos < 170) ? ((wheelPos - 85) * 3)
+                                                                                      : ((wheelPos - 170) * 3),
+                                  (wheelPos < 85) ? (255 - wheelPos * 3) : (wheelPos < 170) ? ((wheelPos - 85) * 3)
+                                                                                            : (255 - (wheelPos - 170) * 3),
+                                  (wheelPos < 85) ? 0 : (wheelPos < 170) ? (255 - (wheelPos - 85) * 3)
+                                                                         : ((wheelPos - 170) * 3)));
     }
     pixels.show();
     delay(delayTime); // Adjust speed of the rainbow effect
   }
 }
-
-// void mockStressSimulation()
-// {
-//   for (float sdnn = 0; sdnn <= 90; sdnn += 5) // Simulating SDNN from 0 to 100
-//   {
-//     Serial.print("Mock SDNN: ");
-//     Serial.println(sdnn);
-
-//     uint8_t red, green, blue;
-
-//     // Determine color mapping based on SDNN range
-//     // High stress
-//     if (sdnn <= 0)
-//     {
-//       red = 0;
-//       green = 0;
-//       blue = 0;
-//     }
-//     else if (sdnn <= 20)
-//     {
-//       // Blue
-//       red = 0;
-//       green = 0;
-//       blue = 255;
-//     }
-//     else if (sdnn > 20 && sdnn <= 30)
-//     {
-//       // Purple
-//       red = 128;
-//       green = 0;
-//       blue = 128;
-//     }
-//     else if (sdnn > 30 && sdnn <= 40)
-//     {
-//       // Pink
-//       red = 255;
-//       green = 105;
-//       blue = 180;
-//     }
-//     else if (sdnn > 40 && sdnn <= 50)
-//     {
-//       // Yellow
-//       red = 255;
-//       green = 158;
-//       blue = 0;
-//     }
-//     else if (sdnn > 50 && sdnn <= 70)
-//     {
-//       // Orange
-//       red = 255;
-//       green = 100;
-//       blue = 0;
-//     }
-//     else
-//     {
-//       rainbowEffect(20);
-//     }
-//     // Low stress
-
-//     // Call colorWaveEffect with the mapped colors
-//     colorWaveEffect(red, green, blue, 70); // Speed of the wave
-
-//     delay(5); // Delay to visualize the change
-//   }
-
-//   for (float sdnn = 90; sdnn >= 0; sdnn -= 5) // Simulating SDNN back from 100 to 0
-//   {
-//     Serial.print("Mock SDNN: ");
-//     Serial.println(sdnn);
-
-//     uint8_t red, green, blue;
-
-//     // Determine color mapping based on SDNN range
-//     // High stress
-//     if (sdnn <= 0)
-//     {
-//       red = 0;
-//       green = 0;
-//       blue = 0;
-//     }
-//     else if (sdnn <= 20)
-//     {
-//       // Blue
-//       red = 0;
-//       green = 0;
-//       blue = 255;
-//     }
-//     else if (sdnn > 20 && sdnn <= 30)
-//     {
-//       // Purple
-//       red = 128;
-//       green = 0;
-//       blue = 128;
-//     }
-//     else if (sdnn > 30 && sdnn <= 40)
-//     {
-//       // Pink
-//       red = 255;
-//       green = 105;
-//       blue = 140;
-//     }
-//     else if (sdnn > 40 && sdnn <= 50)
-//     {
-//       // Yellow
-//       red = 255;
-//       green = 158;
-//       blue = 0;
-//     }
-//     else if (sdnn > 50 && sdnn <= 70)
-//     {
-//       // Orange
-//       red = 255;
-//       green = 100;
-//       blue = 0;
-//     }
-//     else
-//     {
-//       rainbowEffect(20);
-//     }
-//     // Low stress
-
-//     // Call colorWaveEffect with the mapped colors
-//     colorWaveEffect(red, green, blue, 70); // Speed of the wave
-
-//     delay(5); // Delay to visualize the change
-//   }
-// }
-
-// void setup()
-// {
-//   Serial.begin(9600);
-
-//   // Initialize NeoPixel
-//   pixels.begin();
-//   pixels.show();             // Turn off all LEDs initially
-//   pixels.setBrightness(100); // Set brightness for vibrant colors
-// }
-
-// void loop()
-// {
-//   // Run the mock stress simulation
-//   mockStressSimulation();
-// }
 
 void setup()
 {
@@ -221,7 +81,6 @@ void setup()
   // Initialize NeoPixel
   pixels.begin();
   pixels.show(); // Turn off all LEDs initially
-  // pixels.setBrightness(50);
 
   // Connect to Wi-Fi
   WiFi.begin(ssid, password);
@@ -246,86 +105,37 @@ void loop()
     {
       String response = http.getString();
 
-      // Clean up response by removing outer quotes and escape characters
-      if (response.startsWith("\"") && response.endsWith("\""))
-      {
-        response = response.substring(1, response.length() - 1); // Remove outer quotes
-      }
-      response.replace("\\n", "");    // Remove newlines
-      response.replace("\\\"", "\""); // Replace escaped quotes with normal quotes
-      response.trim();                // Remove any extra spaces
-
-      // Parse the cleaned JSON response
+      // Parse the JSON response
       StaticJsonDocument<1024> doc;
       DeserializationError error = deserializeJson(doc, response);
 
       if (!error)
       {
-        // Check if 'sdnn' key exists and retrieve its value
-        if (doc.containsKey("sdnn"))
+        // Check if 'color' key exists and retrieve its value
+        if (doc.containsKey("color"))
         {
-          float sdnn = doc["sdnn"];
-          Serial.println("sdnn: " + String(sdnn));
+          const char *colorHex = doc["color"];
+          Serial.print("Received Color Hex: ");
+          Serial.println(colorHex);
 
-          if (sdnn > 70)
+          // Check if the color is #FF69B4 (Hot Pink)
+          if (strcmp(colorHex, "#FF69B4") == 0)
           {
-            // Rainbow effect for low stress
-            rainbowEffect(20);
+            Serial.println("Triggering Rainbow Effect...");
+            rainbowEffect(20); // Trigger rainbow effect
           }
           else
           {
-            // Map SDNN to colors based on the specified ranges
-            uint8_t red = 0, green = 0, blue = 0;
-
-            if (sdnn <= 0) {
-              // No signal or high stress
-              red = 0;
-              green = 0;
-              blue = 0;
-            }
-            else if (sdnn <= 20)
-            {
-              // Blue
-              red = 0;
-              green = 0;
-              blue = 255;
-            }
-            else if (sdnn > 20 && sdnn <= 30)
-            {
-              // Purple
-              red = 128;
-              green = 0;
-              blue = 128;
-            }
-            else if (sdnn > 30 && sdnn <= 40)
-            {
-              // Pink
-              red = 255;
-              green = 105;
-              blue = 140;
-            }
-            else if (sdnn > 40 && sdnn <= 50)
-            {
-              // Yellow
-              red = 255;
-              green = 158;
-              blue = 0;
-            }
-            else if (sdnn > 50 && sdnn <= 70)
-            {
-              // Orange
-              red = 255;
-              green = 100;
-              blue = 0;
-            }
-
-            // Call colorWaveEffect with the mapped colors
-            colorWaveEffect(red, green, blue, 50); // Speed of the wave
+            // Convert hex to RGB and apply color wave effect
+            uint8_t red, green, blue;
+            hexToRGB(colorHex, red, green, blue);
+            Serial.printf("Setting Color: R=%d, G=%d, B=%d\n", red, green, blue);
+            colorWaveEffect(red, green, blue, 50); // Apply color wave effect
           }
         }
         else
         {
-          Serial.println("Error: 'sdnn' key not found in JSON response.");
+          Serial.println("Error: 'color' key not found in JSON response.");
         }
       }
       else
@@ -348,5 +158,3 @@ void loop()
 
   delay(500); // Wait 0.5 seconds before the next request
 }
-
-// TODO: have a placeholder liht when switching the watch
