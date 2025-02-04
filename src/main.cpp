@@ -53,7 +53,26 @@ void hexToRGB(const char *hex, uint8_t &red, uint8_t &green, uint8_t &blue)
   }
 }
 
-// Function to generate a rainbow effect
+// Generate colors across a spectrum
+uint32_t colorWheel(byte position)
+{
+  position = 255 - position;
+  if (position < 85)
+  {
+    return pixels.Color(255 - position * 3, 0, position * 3);
+  }
+  else if (position < 170)
+  {
+    position -= 85;
+    return pixels.Color(0, position * 3, 255 - position * 3);
+  }
+  else
+  {
+    position -= 170;
+    return pixels.Color(position * 3, 255 - position * 3, 0);
+  }
+}
+
 void rainbowEffect(int delayTime)
 {
   for (int j = 0; j < 256; j++)
@@ -61,16 +80,77 @@ void rainbowEffect(int delayTime)
     for (int i = 0; i < NUMPIXELS; i++)
     {
       int wheelPos = (i * 256 / NUMPIXELS + j) & 255;
-      pixels.setPixelColor(i, pixels.Color(
-                                  (wheelPos < 85) ? (wheelPos * 3) : (wheelPos < 170) ? ((wheelPos - 85) * 3)
-                                                                                      : ((wheelPos - 170) * 3),
-                                  (wheelPos < 85) ? (255 - wheelPos * 3) : (wheelPos < 170) ? ((wheelPos - 85) * 3)
-                                                                                            : (255 - (wheelPos - 170) * 3),
-                                  (wheelPos < 85) ? 0 : (wheelPos < 170) ? (255 - (wheelPos - 85) * 3)
-                                                                         : ((wheelPos - 170) * 3)));
+      pixels.setPixelColor(i, colorWheel(wheelPos));
     }
     pixels.show();
-    delay(delayTime); // Adjust speed of the rainbow effect
+    delay(delayTime);
+  }
+}
+
+// Pulsing Gray Effect (Breathing Light)
+void pulsingGrayEffect(int delayTime)
+{
+  for (int brightness = 0; brightness <= 255; brightness += 5)
+  {
+    for (int i = 0; i < NUMPIXELS; i++)
+    {
+      pixels.setPixelColor(i, pixels.Color(brightness, brightness, brightness));
+    }
+    pixels.show();
+    delay(delayTime);
+  }
+  for (int brightness = 255; brightness >= 0; brightness -= 5)
+  {
+    for (int i = 0; i < NUMPIXELS; i++)
+    {
+      pixels.setPixelColor(i, pixels.Color(brightness, brightness, brightness));
+    }
+    pixels.show();
+    delay(delayTime);
+  }
+}
+
+void dimRedGlowEffect(int delayTime)
+{
+  for (int brightness = 0; brightness <= 100; brightness += 5)
+  {
+    for (int i = 0; i < NUMPIXELS; i++)
+    {
+      pixels.setPixelColor(i, pixels.Color(brightness, 0, 0)); // Dim red
+    }
+    pixels.show();
+    delay(delayTime);
+  }
+  for (int brightness = 100; brightness >= 0; brightness -= 5)
+  {
+    for (int i = 0; i < NUMPIXELS; i++)
+    {
+      pixels.setPixelColor(i, pixels.Color(brightness, 0, 0)); // Dim red
+    }
+    pixels.show();
+    delay(delayTime);
+  }
+}
+
+void softPulsingOrange(int delayTime)
+{
+  for (int brightness = 50; brightness <= 150; brightness += 5)
+  {
+    for (int i = 0; i < NUMPIXELS; i++)
+    {
+      pixels.setPixelColor(i, pixels.Color(brightness, brightness / 2, 0)); // Warm orange
+    }
+    pixels.show();
+    delay(delayTime);
+  }
+  for (int brightness = 150; brightness >= 50; brightness -= 5)
+  {
+    for (int i = 0; i < NUMPIXELS; i++)
+    {
+      pixels.setPixelColor(i, pixels.Color(brightness, brightness / 2, 0));
+    }
+    pixels.show();
+    delay(delayTime);
   }
 }
 
@@ -122,7 +202,17 @@ void loop()
           if (strcmp(colorHex, "#FF69B4") == 0)
           {
             Serial.println("Triggering Rainbow Effect...");
-            rainbowEffect(20); // Trigger rainbow effect
+            rainbowEffect(25); // Trigger rainbow effect
+          }
+          else if (strcmp(colorHex, "bad_signal") == 0)
+          {
+            Serial.println("Triggering Error Effect...");
+            dimRedGlowEffect(25);
+          }
+          else if (strcmp(colorHex, "loading") == 0)
+          {
+            Serial.println("Triggering Pulsing Gray Effect...");
+            pulsingGrayEffect(10);
           }
           else
           {
