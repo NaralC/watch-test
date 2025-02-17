@@ -8,7 +8,7 @@ const char *ssid = "ඞඞඞඞඞඞඞඞඞ";
 const char *password = "12345678";
 
 // API endpoint
-const char *serverUrl = "http://192.168.242.36:8000/hrv/api/endpoint/";
+const char *serverUrl = "http://192.168.243.36:8000/hrv/api/endpoint/";
 
 // Define the GPIO pin connected to the DIN of the WS2812B
 #define LED_PIN 4    // Change this to the GPIO pin you are using (e.g., GPIO 5)
@@ -154,6 +154,35 @@ void softPulsingOrange(int delayTime)
   }
 }
 
+void breathingEffect()
+{
+  // Inhale: Gradually increase brightness
+  for (int brightness = 0; brightness <= 255; brightness += 5)
+  {
+    for (int i = 0; i < NUMPIXELS; i++)
+    {
+      pixels.setPixelColor(i, pixels.Color(brightness, brightness / 2, 50)); // Soft warm tone
+    }
+    pixels.show();
+    delay(4000 / (255 / 5)); // Gradual inhale over 4 seconds
+  }
+
+  delay(250); // Short pause at peak (holding breath)
+
+  // Exhale: Gradually decrease brightness
+  for (int brightness = 255; brightness >= 0; brightness -= 5)
+  {
+    for (int i = 0; i < NUMPIXELS; i++)
+    {
+      pixels.setPixelColor(i, pixels.Color(brightness, brightness / 2, 50)); // Fading out gently
+    }
+    pixels.show();
+    delay(4000 / (255 / 5)); // Gradual exhale over 4 seconds
+  }
+
+  delay(500); // Short pause before next cycle
+}
+
 void setup()
 {
   Serial.begin(9600);
@@ -213,6 +242,11 @@ void loop()
           {
             Serial.println("Triggering Pulsing Gray Effect...");
             pulsingGrayEffect(10);
+          }
+          else if (strcmp(colorHex, "is_breathing") == 0)
+          {
+            Serial.println("Triggering Breathing Effect...");
+            breathingEffect();
           }
           else
           {
